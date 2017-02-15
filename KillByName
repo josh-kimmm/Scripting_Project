@@ -1,0 +1,99 @@
+#!/bin/bash
+#filename:      KillByName
+#description:   Terminates existing processes with the option of passing a name as
+#		a parameter and giving the option to kill without using kill -9
+#author:        Joshua Kim
+#date:          12/3/2016
+#===============================================================================
+# usage message and variable names to be used within script
+USAGE='Usage: KillByName [-g] -n <name> or KillByName [-g] <pid>'
+PID=""
+gflag=""
+nflag=""
+childPID=""
+exitcode=""
+#function:      usage
+#description:   1. parse command line arguments
+#               2. for illegal usages, print usage message and exit 1
+#               3. otherwise, communicate to main() what flags are set
+function usage {
+	while getopts ":gn:" opt;
+	do
+		case $opt in
+			g) 	gflag="SET";;
+			n)	nflag="SET"
+				PID=`ps u | grep -v "KillByName" | grep $OPTARG | awk 'NR==1{print $2}'`;;
+			\?)	echo $USAGE
+				exit 1;;
+		esac
+	done
+	shift $((OPTIND-1))
+	if [ -z $nflag ]; then
+	PID=$@
+	fi
+	if [ "" == "$PID" ]; then
+	echo $USAGE
+	exit 1
+	fi
+	if [ "" == "$nflag" -a "" == "$gflag" ]; then
+	echo $USAGE
+	exit 1
+	fi
+}
+#function:      main
+#description:   For Part 1:
+#               1. use usage() to parse command line arguments
+#               2. echo corresponding messages for each flag that is set
+#
+#               For Part 2:
+#               Kill processes based on the case return by `usage`
+function main {
+	
+	usage $@
+	`ps -p $PID &> /dev/null`
+	if [ "$?" == "1" ]; then
+	exit 1
+	fi
+	
+	childPID=`ps --ppid $PID | grep -v "KillByName" | awk 'NR==2{print $1}'`
+	`ps --ppid $PID &> /dev/null`
+	exitcode="$?"
+	
+	if [ "SET" == "$gflag" ]; then
+	childindex="2"
+	while [ "$childPID" != "" ]
+	do
+		kill $childPID
+		childPID=`ps --ppid $PID | grep -v "KillByName" | awk 'NR=='$childindex'{print $1}'`
+		childindex=`expr $childindex + 1`
+	done
+	kill $PID
+	exit 0
+	fi
+	while [ "$exitcode" == "0" ]
+	do
+		kill $childPID
+		childPID=`ps --ppid $PID | grep -v "KillByName" | awk 'NR==2{print $1}'`
+		`ps --ppid $PID &> /dev/null`
+		exitcode="$?"
+	done
+	childPID=`ps --ppid $PID | grep -v "KillByName" | awk 'NR==2{print $1}'`
+	`ps --ppid $PID &> /dev/null`	
+	exitcode="$?"
+	
+	while [ "$exitcode" == "0" ]
+	do
+		kill -9 $childPID
+		childPID=`ps --ppid $PID | grep -v "KillByName" | awk 'NR==2{print $1}'`
+		`ps --ppid $PID &> /dev/null`		
+		exitcode="$?"
+	done
+	
+	kill $PID
+	exitcode="$?"
+	if [ "$exitcode" == "1" ]; then
+	kill -9 $PID
+	fi
+		
+}
+main $@
