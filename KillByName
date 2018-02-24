@@ -4,6 +4,7 @@
 #		a parameter and giving the option to kill without using kill -9
 #author:        Joshua Kim
 #date:          12/3/2016
+# TESTING TO PUSH THIS
 #===============================================================================
 # usage message and variable names to be used within script
 USAGE='Usage: KillByName [-g] -n <name> or KillByName [-g] <pid>'
